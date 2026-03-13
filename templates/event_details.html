@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event[1] }} - Event Details{% endblock %}
+
+{% block content %}
+    <div class="event-header">
+        <h1>{{ event[1] }}</h1>
+        <div class="event-meta">
+            <span class="badge badge-primary">{{ event[6] }}</span>
+            {% if event[10] == 1 %}
+                <span class="badge badge-success">You are registered</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="event-details">
+        <div class="detail-item">
+            <strong>📅 Date & Time</strong>
+            <div>{{ event[2].strftime('%A, %d %B %Y') }}</div>
+            <div>{{ event[3] }}</div>
+        </div>
+        
+        <div class="detail-item">
+            <strong>📍 Location</strong>
+            <div>{{ event[4] }}</div>
+        </div>
+        
+        <div class="detail-item">
+            <strong>👤 Organizer</strong>
+            <div>{{ event[7] or 'Not specified' }}</div>
+        </div>
+        
+        <div class="detail-item">
+            <strong>👥 Capacity</strong>
+            <div>
+                {% if event[8] and event[8] > 0 %}
+                    {{ event[11] }} / {{ event[8] }} registered
+                    <div class="progress-bar" style="margin-top: 10px;">
+                        <div class="progress-fill" style="width: {{ (event[11] / event[8] * 100)|round }}%"></div>
+                    </div>
+                {% else %}
+                    Unlimited
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if event[5] %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📝 Description</h3>
+        </div>
+        <div class="card-body">
+            <p style="line-height: 1.6;">{{ event[5] }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="event-actions">
+        {% if session.get('user_id') %}
+            {% if event[10] == 1 %}
+                <a href="/unregister_event/{{ event[0] }}" class="btn btn-warning" 
+                   onclick="return confirm('Are you sure you want to unregister from this event?');">
+                   ❌ Unregister from Event
+                </a>
+            {% else %}
+                {% if event[8] and event[8] > 0 and event[11] >= event[8] %}
+                    <span class="badge badge-danger" style="font-size: 1em; padding: 12px 24px;">Event is at full capacity</span>
+                {% else %}
+                    <a href="/register_event/{{ event[0] }}" class="btn btn-success">
+                       ✅ Register for Event
+                    </a>
+                {% endif %}
+            {% endif %}
+        {% else %}
+            <a href="/login" class="btn">Login to Register</a>
+        {% endif %}
+        
+        <a href="/" class="btn btn-secondary" style="margin-left: 10px;">← Back to Events</a>
+    </div>
+{% endblock %}
