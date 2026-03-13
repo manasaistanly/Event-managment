@@ -25,6 +25,5 @@ CREATE TABLE IF NOT EXISTS events (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Insert a default admin account if not exists
 INSERT IGNORE INTO users (id, name, email, password, role) VALUES 
 (1, 'Admin', 'admin@gmail.com', 'admin123', 'admin');
