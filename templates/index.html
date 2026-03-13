@@ -3,33 +3,40 @@
 {% block title %}Events - College Event Radar{% endblock %}
 
 {% block content %}
-    <h1>📅 All College Events</h1>
+    <h1>📅 Ace College Events</h1>
 
     <!-- Search and Filter -->
     <div class="search-filter">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: var(--text-color);">🔍 Search & Filter Events</h3>
+            <div class="view-toggle">
+                <button id="table-view" class="view-btn active" title="Table View">📊</button>
+                <button id="card-view" class="view-btn" title="Card View">📋</button>
+            </div>
+        </div>
         <form method="GET" action="/">
             <div class="form-group">
+                <input type="text" id="search" name="search" placeholder=" " value="{{ search }}">
                 <label for="search">Search Events</label>
-                <input type="text" id="search" name="search" placeholder="Search by name, location, or description..." value="{{ search }}">
             </div>
             
             <div class="form-group">
-                <label for="category">Category</label>
                 <select id="category" name="category">
                     <option value="">All Categories</option>
                     {% for cat in categories %}
                         <option value="{{ cat }}" {% if cat == category %}selected{% endif %}>{{ cat }}</option>
                     {% endfor %}
                 </select>
+                <label for="category">Category</label>
             </div>
             
             <div class="form-group">
-                <label for="sort">Sort By</label>
                 <select id="sort" name="sort">
                     <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>Date (Earliest First)</option>
                     <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>Date (Latest First)</option>
                     <option value="name" {% if sort == 'name' %}selected{% endif %}>Event Name (A-Z)</option>
                 </select>
+                <label for="sort">Sort By</label>
             </div>
             
             <button type="submit" class="btn">🔍 Search</button>
@@ -49,6 +56,7 @@
                     <th>Location</th>
                     <th>Category</th>
                     <th>Description</th>
+                    <th>Registrations</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -70,6 +78,18 @@
                         {% endif %}
                     </td>
                     <td>
+                        {% if event[8] and event[8] > 0 %}
+                            <div class="registration-count">
+                                <span class="count">{{ event[11] }}/{{ event[8] }}</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: {{ (event[11] / event[8] * 100)|round }}%"></div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">Unlimited</span>
+                        {% endif %}
+                    </td>
+                    <td>
                         {% if session.get('role') == 'admin' %}
                             <div class="btn-group">
                                 <a href="/edit/{{ event[0] }}" class="btn btn-small btn-secondary" title="Edit Event">✏️ Edit</a>
@@ -78,8 +98,27 @@
                                     <button type="submit" class="btn btn-small btn-danger" title="Delete Event">🗑️ Delete</button>
                                 </form>
                             </div>
+                        {% elif session.get('user_id') %}
+                            <div class="btn-group">
+                                <a href="/event/{{ event[0] }}" class="btn btn-small" title="View Event Details">👁️ Details</a>
+                                {% if event[10] == 1 %}
+                                    <a href="/unregister_event/{{ event[0] }}" class="btn btn-small btn-warning" 
+                                       onclick="return confirm('Are you sure you want to unregister from this event?');" 
+                                       title="Unregister from Event">❌ Unregister</a>
+                                {% else %}
+                                    {% if event[8] and event[8] > 0 and event[11] >= event[8] %}
+                                        <span class="badge badge-danger">Full</span>
+                                    {% else %}
+                                        <a href="/register_event/{{ event[0] }}" class="btn btn-small btn-success" 
+                                           title="Register for Event">✅ Register</a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
                         {% else %}
-                            <span class="text-muted">View Only</span>
+                            <div class="btn-group">
+                                <a href="/event/{{ event[0] }}" class="btn btn-small" title="View Event Details">👁️ Details</a>
+                                <span class="text-muted">Login to register</span>
+                            </div>
                         {% endif %}
                     </td>
                 </tr>
