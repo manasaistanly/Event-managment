@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, flash, session
-import pymysql
+import os
+import psycopg2
+from psycopg2 import Error as DBError
 from datetime import datetime
 import hashlib
 from functools import wraps
@@ -7,18 +9,22 @@ from functools import wraps
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here_please_change_it'
 
-# MySQL Connection Function
+# Postgres (Neon) Connection Function
 def get_db_connection():
+    db_url = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("POSTGRES_URL")
+        or os.getenv("NEON_DATABASE_URL")
+    )
+    if not db_url:
+        print("Database URL not configured. Set DATABASE_URL/POSTGRES_URL.")
+        return None
+
     try:
-        db = pymysql.connect(
-            host="localhost",
-            user="root",
-            password="root",
-            database="college_event_radar"
-        )
+        db = psycopg2.connect(db_url, sslmode="require")
         return db
-    except pymysql.Error as e:
-        print(f"Error connecting to MySQL: {e}")
+    except DBError as e:
+        print(f"Error connecting to Postgres: {e}")
         return None
 
 # Hash password function
@@ -91,7 +97,7 @@ def login():
                 flash('Invalid email or password!', 'error')
                 return render_template('login.html')
         
-        except pymysql.Error as e:
+        except DBError as e:
             flash(f'Error logging in: {e}', 'error')
             return render_template('login.html')
     
@@ -150,7 +156,7 @@ def register():
             flash('Registration successful! Please login.', 'success')
             return redirect('/login')
         
-        except pymysql.Error as e:
+        except DBError as e:
             flash(f'Error registering: {e}', 'error')
             return render_template('register.html')
     
@@ -188,7 +194,7 @@ def dashboard():
         total_users = cursor.fetchone()[0]
         
         # Get registrations last 7 days
-        cursor.execute("SELECT COUNT(*) FROM event_registrations WHERE registered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
+        cursor.execute("SELECT COUNT(*) FROM event_registrations WHERE registered_at >= NOW() - INTERVAL '7 days'")
         recent_registrations = cursor.fetchone()[0]
         
         # Get events by category
@@ -223,7 +229,7 @@ def dashboard():
         }
         
         return render_template("dashboard.html", stats=stats, active_page='dashboard')
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error loading dashboard: {e}', 'error')
         return render_template("dashboard.html", stats={}, active_page='dashboard')
 
@@ -239,7 +245,7 @@ def admin_users():
         cursor.close()
         db.close()
         return render_template("admin_users.html", users=users, active_page='admin_users')
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error loading users: {e}', 'error')
         return redirect('/dashboard')
 
@@ -264,7 +270,7 @@ def student_dashboard():
         cursor.execute("""
             SELECT COUNT(*) FROM events e
             JOIN event_registrations r ON e.id = r.event_id
-            WHERE r.user_id = %s AND e.event_date >= DATE(NOW())
+            WHERE r.user_id = %s AND e.event_date >= CURRENT_DATE
         """, (user_id,))
         my_upcoming = cursor.fetchone()[0]
         
@@ -281,7 +287,7 @@ def student_dashboard():
         cursor.execute("""
             SELECT DISTINCT e.* FROM events e 
             WHERE e.id NOT IN (SELECT event_id FROM event_registrations WHERE user_id = %s)
-            AND e.event_date >= DATE(NOW())
+            AND e.event_date >= CURRENT_DATE
             ORDER BY e.event_date ASC LIMIT 4
         """, (user_id,))
         recommended_events = cursor.fetchall()
@@ -297,7 +303,7 @@ def student_dashboard():
         }
         
         return render_template("student_dashboard.html", stats=stats, active_page='student_dashboard')
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error loading student dashboard: {e}', 'error')
         return render_template("student_dashboard.html", stats={}, active_page='student_dashboard')
 
@@ -335,7 +341,7 @@ def profile():
             db.close()
             flash('Profile updated successfully!', 'success')
             return redirect('/profile')
-        except pymysql.Error as e:
+        except DBError as e:
             flash(f'Error updating profile: {e}', 'error')
             return redirect('/profile')
 
@@ -348,7 +354,7 @@ def profile():
         cursor.close()
         db.close()
         return render_template("profile.html", user=user, active_page='profile')
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error loading profile: {e}', 'error')
         return redirect('/')
 
@@ -382,7 +388,7 @@ def submit_feedback(event_id):
         db.commit()
         cursor.close()
         db.close()
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error submitting feedback: {e}', 'error')
         
     return redirect(f'/event/{event_id}')
@@ -454,7 +460,7 @@ def index():
             flash('No events found. Create your first event!', 'info')
         
         return render_template("index.html", events=events, categories=categories, search=search, category=category, sort=sort)
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error retrieving events: {e}', 'error')
         return render_template("index.html", events=[])
 
@@ -511,7 +517,7 @@ def insert():
 
         flash('Event added successfully!', 'success')
         return redirect('/')
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error adding event: {e}', 'error')
         return redirect('/add')
 
@@ -540,7 +546,7 @@ def edit(event_id):
             return redirect('/')
         
         return render_template("edit_event.html", event=event, categories=categories)
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error loading event: {e}', 'error')
         return redirect('/')
 
@@ -578,7 +584,7 @@ def update(event_id):
 
         flash('Event updated successfully!', 'success')
         return redirect('/')
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error updating event: {e}', 'error')
         return redirect(f'/edit/{event_id}')
 
@@ -599,7 +605,7 @@ def delete(event_id):
         db.close()
 
         flash('Event deleted successfully!', 'success')
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error deleting event: {e}', 'error')
     
     return redirect('/')
@@ -650,7 +656,7 @@ def register_event(event_id):
         db.close()
         
         flash(f'Successfully registered for "{event[1]}"!', 'success')
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error registering for event: {e}', 'error')
     
     return redirect('/')
@@ -674,7 +680,7 @@ def unregister_event(event_id):
         db.close()
         
         flash('Successfully unregistered from the event!', 'success')
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error unregistering from event: {e}', 'error')
     
     return redirect('/')
@@ -723,7 +729,7 @@ def event_details(event_id):
         db.close()
         
         return render_template("event_details.html", event=event, feedbacks=feedbacks)
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error loading event details: {e}', 'error')
         return redirect('/')
 
@@ -752,7 +758,7 @@ def my_events():
         db.close()
         
         return render_template("my_events.html", events=events)
-    except pymysql.Error as e:
+    except DBError as e:
         flash(f'Error loading your events: {e}', 'error')
         return render_template("my_events.html", events=[])
 
