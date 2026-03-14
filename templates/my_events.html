@@ -1,53 +1,47 @@
-{% extends "base.html" %}
+{% extends "layout.html" %}
 
-{% block title %}My Events - College Event Radar{% endblock %}
+{% block title %}My Events - EventRadar{% endblock %}
 
 {% block content %}
-    <h1>📅 My Registered Events</h1>
+<div class="dashboard-header animate-slide-in">
+    <h1>My Registered Events</h1>
+    <p class="text-muted">Explore the events you've signed up for.</p>
+</div>
 
-    <!-- Events Table -->
-    {% if events %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Event Name</th>
-                    <th>Date & Time</th>
-                    <th>Location</th>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for event in events %}
-                <tr>
-                    <td><strong>{{ event[1] }}</strong></td>
-                    <td>
-                        <div>{{ event[2].strftime('%d %b %Y') }}</div>
-                        <span class="text-muted">{{ event[3] }}</span>
-                    </td>
-                    <td>📍 {{ event[4] }}</td>
-                    <td><span class="badge badge-primary">{{ event[6] }}</span></td>
-                    <td>
-                        {% if event[5] %}
-                            {{ event[5][:50] }}{% if event[5]|length > 50 %}...{% endif %}
-                        {% else %}
-                            <span class="text-muted">No description</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="/unregister_event/{{ event[0] }}" class="btn btn-small btn-warning" 
-                           onclick="return confirm('Are you sure you want to unregister from this event?');" 
-                           title="Unregister from Event">❌ Unregister</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <div class="no-events">
-            <p>📭 You haven't registered for any events yet</p>
-            <p><a href="/" style="color: white; text-decoration: underline; font-weight: bold;">Browse available events</a> to register</p>
+{% if events %}
+<div class="events-grid animate-slide-in" style="margin-top: 2rem;">
+    {% for event in events %}
+    <div class="event-card">
+        <div class="event-image">
+            <span class="event-category-badge">{{ event[6] }}</span>
         </div>
-    {% endif %}
+        <div class="event-body">
+            <h3 class="event-title">{{ event[1] }}</h3>
+            <div class="event-meta">
+                <span><i class="far fa-calendar"></i> {{ event[2] }}</span>
+                <span><i class="fas fa-map-marker-alt"></i> {{ event[4] }}</span>
+            </div>
+            <div class="event-footer">
+                <a href="/event/{{ event[0] }}" class="btn btn-outline btn-sm">Details</a>
+                <a href="/unregister_event/{{ event[0] }}" class="btn btn-danger btn-sm" onclick="return confirm('Unregister from this event?')">Unregister</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state animate-slide-in">
+    <i class="fas fa-calendar-times"></i>
+    <h3>No registered events</h3>
+    <p>You haven't joined any events yet. Check out the home page to find some!</p>
+    <a href="/" class="btn btn-primary">Browse Events</a>
+</div>
+{% endif %}
+
+<style>
+    .empty-state { text-align: center; padding: 5rem 2rem; }
+    .empty-state i { font-size: 4rem; color: var(--text-muted); margin-bottom: 1.5rem; opacity: 0.3; }
+    .btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .btn-danger:hover { background: #ef4444; color: white; }
+</style>
 {% endblock %}

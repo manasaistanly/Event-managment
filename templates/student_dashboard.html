@@ -1,0 +1,91 @@
+{% extends "layout.html" %}
+
+{% block title %}My Dashboard - Event Monitor{% endblock %}
+
+{% block content %}
+<div class="dashboard-header animate-slide-in">
+    <h1>Welcome back, {{ session.get('name') }}!</h1>
+    <p class="text-muted">Here's your event overview and recommendations.</p>
+</div>
+
+<div class="stats-grid animate-slide-in">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="stat-info">
+            <span>Total Registered</span>
+            <h3>{{ stats.total }}</h3>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(236, 72, 153, 0.1); color: var(--secondary);">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-info">
+            <span>Upcoming Events</span>
+            <h3>{{ stats.upcoming }}</h3>
+        </div>
+    </div>
+</div>
+
+<div class="events-section animate-slide-in">
+    <div class="events-header">
+        <h2>Recently Registered</h2>
+        <a href="/my_events" class="btn btn-outline">View All</a>
+    </div>
+    
+    {% if stats.recent %}
+    <div class="events-grid">
+        {% for event in stats.recent %}
+        <div class="event-card">
+            <div class="event-image">
+                <span class="event-category-badge">{{ event[6] }}</span>
+            </div>
+            <div class="event-body">
+                <h3 class="event-title">{{ event[1] }}</h3>
+                <div class="event-meta">
+                    <span><i class="far fa-calendar"></i> {{ event[2] }}</span>
+                    <span><i class="far fa-clock"></i> {{ event[3] }}</span>
+                </div>
+                <div class="event-footer">
+                    <a href="/event/{{ event[0] }}" class="btn btn-primary btn-sm">Details</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        You haven't registered for any events yet. Check out the recommended events below!
+    </div>
+    {% endif %}
+</div>
+
+<div class="events-section animate-slide-in" style="margin-top: 3rem;">
+    <div class="events-header">
+        <h2>Recommended for You</h2>
+        <a href="/" class="btn btn-outline">Explore All</a>
+    </div>
+    
+    <div class="events-grid">
+        {% for event in stats.recommended %}
+        <div class="event-card">
+            <div class="event-image">
+                <div class="event-category-badge">{{ event[6] }}</div>
+            </div>
+            <div class="event-body">
+                <h3 class="event-title">{{ event[1] }}</h3>
+                <div class="event-meta">
+                    <span><i class="fas fa-map-marker-alt"></i> {{ event[4] }}</span>
+                </div>
+                <div class="event-footer">
+                    <a href="/register_event/{{ event[0] }}" class="btn btn-primary btn-sm">Quick Register</a>
+                    <a href="/event/{{ event[0] }}" class="btn btn-outline btn-sm">View</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -13,7 +13,7 @@ def get_db_connection():
         db = pymysql.connect(
             host="localhost",
             user="root",
-            password="root123",
+            password="root",
             database="college_event_radar"
         )
         return db
@@ -68,21 +68,26 @@ def login():
                 return render_template('login.html')
             
             cursor = db.cursor()
-            cursor.execute("SELECT id, name, email, role FROM users WHERE email = %s AND password = %s", 
-                         (email, hash_password(password)))
+            cursor.execute(
+                "SELECT id, name, email, role, profile_pic FROM users WHERE email = %s AND password = %s",
+                (email, hash_password(password))
+            )
             user = cursor.fetchone()
-            cursor.close()
-            db.close()
             
             if user:
                 session['user_id'] = user[0]
                 session['name'] = user[1]
                 session['email'] = user[2]
                 session['role'] = user[3]
+                session['profile_pic'] = user[4]
                 
                 flash(f'Welcome back, {user[1]}!', 'success')
+                cursor.close()
+                db.close()
                 return redirect('/')
             else:
+                cursor.close()
+                db.close()
                 flash('Invalid email or password!', 'error')
                 return render_template('login.html')
         
@@ -92,7 +97,7 @@ def login():
     
     return render_template('login.html')
 
-# Register Page
+# Register Page 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -166,7 +171,7 @@ def dashboard():
         db = get_db_connection()
         if db is None:
             flash('Database connection failed!', 'error')
-            return render_template("dashboard.html", stats={})
+            return render_template("dashboard.html", stats={}, active_page='dashboard')
         
         cursor = db.cursor()
         
@@ -174,17 +179,17 @@ def dashboard():
         cursor.execute("SELECT COUNT(*) FROM events")
         total_events = cursor.fetchone()[0]
         
-        # Get upcoming events
-        cursor.execute("SELECT COUNT(*) FROM events WHERE event_date >= DATE(NOW())")
-        upcoming_events = cursor.fetchone()[0]
-        
-        # Get past events
-        cursor.execute("SELECT COUNT(*) FROM events WHERE event_date < DATE(NOW())")
-        past_events = cursor.fetchone()[0]
-        
         # Get total registrations
         cursor.execute("SELECT COUNT(*) FROM event_registrations")
         total_registrations = cursor.fetchone()[0]
+        
+        # Get total users
+        cursor.execute("SELECT COUNT(*) FROM users")
+        total_users = cursor.fetchone()[0]
+        
+        # Get registrations last 7 days
+        cursor.execute("SELECT COUNT(*) FROM event_registrations WHERE registered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
+        recent_registrations = cursor.fetchone()[0]
         
         # Get events by category
         cursor.execute("SELECT category, COUNT(*) as count FROM events GROUP BY category")
@@ -193,23 +198,194 @@ def dashboard():
         # Get recent events
         cursor.execute("SELECT * FROM events ORDER BY created_at DESC LIMIT 5")
         recent_events = cursor.fetchall()
+
+        # Get top users by registration count
+        cursor.execute("""
+            SELECT u.name, COUNT(r.id) as reg_count 
+            FROM users u 
+            JOIN event_registrations r ON u.id = r.user_id 
+            GROUP BY u.id 
+            ORDER BY reg_count DESC LIMIT 5
+        """)
+        top_users = cursor.fetchall()
         
         cursor.close()
         db.close()
         
         stats = {
-            'total': total_events,
-            'upcoming': upcoming_events,
-            'past': past_events,
-            'registrations': total_registrations,
+            'total_events': total_events,
+            'total_registrations': total_registrations,
+            'total_users': total_users,
+            'recent_registrations': recent_registrations,
             'categories': categories,
-            'recent': recent_events
+            'recent': recent_events,
+            'top_users': top_users
         }
         
-        return render_template("dashboard.html", stats=stats)
+        return render_template("dashboard.html", stats=stats, active_page='dashboard')
     except pymysql.Error as e:
         flash(f'Error loading dashboard: {e}', 'error')
-        return render_template("dashboard.html", stats={})
+        return render_template("dashboard.html", stats={}, active_page='dashboard')
+
+# User Management (Admin only)
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC")
+        users = cursor.fetchall()
+        cursor.close()
+        db.close()
+        return render_template("admin_users.html", users=users, active_page='admin_users')
+    except pymysql.Error as e:
+        flash(f'Error loading users: {e}', 'error')
+        return redirect('/dashboard')
+
+# Student Dashboard
+@app.route('/student_dashboard')
+@login_required
+def student_dashboard():
+    try:
+        db = get_db_connection()
+        if db is None:
+            flash('Database connection failed!', 'error')
+            return render_template("student_dashboard.html", stats={}, active_page='student_dashboard')
+        
+        cursor = db.cursor()
+        user_id = session['user_id']
+        
+        # My total registrations
+        cursor.execute("SELECT COUNT(*) FROM event_registrations WHERE user_id = %s", (user_id,))
+        my_registrations = cursor.fetchone()[0]
+        
+        # Upcoming events for me
+        cursor.execute("""
+            SELECT COUNT(*) FROM events e
+            JOIN event_registrations r ON e.id = r.event_id
+            WHERE r.user_id = %s AND e.event_date >= DATE(NOW())
+        """, (user_id,))
+        my_upcoming = cursor.fetchone()[0]
+        
+        # Latest 3 registered events
+        cursor.execute("""
+            SELECT e.* FROM events e
+            JOIN event_registrations r ON e.id = r.event_id
+            WHERE r.user_id = %s
+            ORDER BY r.registered_at DESC LIMIT 3
+        """, (user_id,))
+        recent_my_events = cursor.fetchall()
+
+        # Recommended events (some logic, e.g. same category as registered)
+        cursor.execute("""
+            SELECT DISTINCT e.* FROM events e 
+            WHERE e.id NOT IN (SELECT event_id FROM event_registrations WHERE user_id = %s)
+            AND e.event_date >= DATE(NOW())
+            ORDER BY e.event_date ASC LIMIT 4
+        """, (user_id,))
+        recommended_events = cursor.fetchall()
+        
+        cursor.close()
+        db.close()
+        
+        stats = {
+            'total': my_registrations,
+            'upcoming': my_upcoming,
+            'recent': recent_my_events,
+            'recommended': recommended_events
+        }
+        
+        return render_template("student_dashboard.html", stats=stats, active_page='student_dashboard')
+    except pymysql.Error as e:
+        flash(f'Error loading student dashboard: {e}', 'error')
+        return render_template("student_dashboard.html", stats={}, active_page='student_dashboard')
+
+# User Profile
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    user_id = session['user_id']
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        bio = request.form.get('bio', '').strip()
+        profile_pic = request.form.get('profile_pic', '').strip()
+        
+        if not name or not email:
+            flash('Name and Email are required!', 'error')
+            return redirect('/profile')
+            
+        try:
+            db = get_db_connection()
+            cursor = db.cursor()
+            cursor.execute("""
+                UPDATE users SET name=%s, email=%s, phone=%s, bio=%s, profile_pic=%s
+                WHERE id=%s
+            """, (name, email, phone, bio, profile_pic, user_id))
+            db.commit()
+            
+            # Update session
+            session['name'] = name
+            session['email'] = email
+            session['profile_pic'] = profile_pic
+            
+            cursor.close()
+            db.close()
+            flash('Profile updated successfully!', 'success')
+            return redirect('/profile')
+        except pymysql.Error as e:
+            flash(f'Error updating profile: {e}', 'error')
+            return redirect('/profile')
+
+    # GET request
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT name, email, role, phone, bio, profile_pic, created_at FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+        db.close()
+        return render_template("profile.html", user=user, active_page='profile')
+    except pymysql.Error as e:
+        flash(f'Error loading profile: {e}', 'error')
+        return redirect('/')
+
+# Event Feedback
+@app.route('/feedback/<int:event_id>', methods=['POST'])
+@login_required
+def submit_feedback(event_id):
+    rating = request.form.get('rating')
+    comment = request.form.get('comment', '').strip()
+    user_id = session['user_id']
+    
+    if not rating:
+        flash('Rating is required!', 'error')
+        return redirect(f'/event/{event_id}')
+        
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Check if already submitted
+        cursor.execute("SELECT id FROM event_feedbacks WHERE user_id = %s AND event_id = %s", (user_id, event_id))
+        if cursor.fetchone():
+            cursor.execute("UPDATE event_feedbacks SET rating=%s, comment=%s WHERE user_id=%s AND event_id=%s", 
+                         (rating, comment, user_id, event_id))
+            flash('Feedback updated!', 'success')
+        else:
+            cursor.execute("INSERT INTO event_feedbacks (user_id, event_id, rating, comment) VALUES (%s, %s, %s, %s)",
+                         (user_id, event_id, rating, comment))
+            flash('Thank you for your feedback!', 'success')
+            
+        db.commit()
+        cursor.close()
+        db.close()
+    except pymysql.Error as e:
+        flash(f'Error submitting feedback: {e}', 'error')
+        
+    return redirect(f'/event/{event_id}')
 
 # Home Page - List All Events
 @app.route('/')
@@ -533,10 +709,20 @@ def event_details(event_id):
             db.close()
             return redirect('/')
         
+        # Get feedbacks
+        cursor.execute("""
+            SELECT f.rating, f.comment, u.name, f.created_at 
+            FROM event_feedbacks f 
+            JOIN users u ON f.user_id = u.id 
+            WHERE f.event_id = %s 
+            ORDER BY f.created_at DESC
+        """, (event_id,))
+        feedbacks = cursor.fetchall()
+        
         cursor.close()
         db.close()
         
-        return render_template("event_details.html", event=event)
+        return render_template("event_details.html", event=event, feedbacks=feedbacks)
     except pymysql.Error as e:
         flash(f'Error loading event details: {e}', 'error')
         return redirect('/')

@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block title %}User Management - EventRadar{% endblock %}
+
+{% block content %}
+<div class="dashboard-header animate-slide-in">
+    <h1>User Management</h1>
+    <p class="text-muted">View and manage all registered users.</p>
+</div>
+
+<div class="card animate-slide-in" style="margin-top: 2rem;">
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Joined Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>#{{ user[0] }}</td>
+                    <td class="font-600">{{ user[1] }}</td>
+                    <td>{{ user[2] }}</td>
+                    <td><span class="badge-rounded">{{ user[3]|capitalize }}</span></td>
+                    <td>{{ user[4].strftime('%d %b %Y') if user[4] else 'N/A' }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="#" class="action-btn edit" title="Edit User"><i class="fas fa-user-edit"></i></a>
+                            {% if session.get('user_id') != user[0] %}
+                            <a href="#" class="action-btn delete" title="Delete User" onclick="return confirm('Delete this user?')"><i class="fas fa-trash"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .card { background: var(--card-bg); padding: 1.5rem; border-radius: 20px; box-shadow: var(--shadow); }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { padding: 1.25rem 1rem; border-bottom: 1px solid var(--border-color); text-align: left; }
+    .data-table th { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+    .font-600 { font-weight: 600; }
+    .badge-rounded {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .action-buttons { display: flex; gap: 0.5rem; }
+    .action-btn { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: background 0.2s; }
+    .action-btn.edit { color: var(--primary); background: rgba(99, 102, 241, 0.1); }
+    .action-btn.delete { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+</style>
+{% endblock %}

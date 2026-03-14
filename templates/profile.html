@@ -1,0 +1,184 @@
+{% extends "layout.html" %}
+
+{% block title %}My Profile - Event Monitor{% endblock %}
+
+{% block content %}
+<div class="profile-container animate-slide-in">
+    <div class="profile-header">
+        <div class="profile-banner"></div>
+        <div class="profile-info-main">
+            <div class="profile-image-container">
+                <img src="{{ user[5] or 'https://ui-avatars.com/api/?name=' + user[0] + '&size=128' }}" alt="Profile Picture" id="profile-preview">
+            </div>
+            <div class="profile-text">
+                <h1>{{ user[0] }}</h1>
+                <p class="role-badge">{{ user[2]|capitalize }}</p>
+                <p class="member-since">Member since {{ user[6].strftime('%B %Y') if user[6] else 'N/A' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-content-grid">
+        <div class="profile-card">
+            <div class="card-header">
+                <h3><i class="fas fa-user-edit"></i> Edit Profile</h3>
+            </div>
+            <form action="/profile" method="POST" class="profile-form">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" value="{{ user[0] }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" value="{{ user[1] }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" value="{{ user[3] or '' }}" placeholder="+1 (555) 000-0000">
+                </div>
+
+                <div class="form-group">
+                    <label for="profile_pic">Profile Picture URL</label>
+                    <input type="url" id="profile_pic" name="profile_pic" value="{{ user[5] or '' }}" placeholder="https://example.com/photo.jpg" onchange="updatePreview(this.value)">
+                </div>
+
+                <div class="form-group">
+                    <label for="bio">Bio</label>
+                    <textarea id="bio" name="bio" rows="4" placeholder="Tell us about yourself...">{{ user[4] or '' }}</textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="reset" class="btn btn-outline">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="profile-stats-side">
+            <div class="profile-card">
+                <h3>Quick Stats</h3>
+                <div class="stats-mini">
+                    <div class="stat-item">
+                        <span class="stat-label">Events Joined</span>
+                        <span class="stat-value">#</span> <!-- Would need to pass this count from backend -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="profile-card" style="margin-top: 1.5rem;">
+                <h3>Account Security</h3>
+                <p class="text-muted" style="margin-bottom: 1rem;">Update your password regularly to stay secure.</p>
+                <a href="#" class="btn btn-outline btn-sm">Change Password</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .profile-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .profile-header {
+        position: relative;
+        background: var(--card-bg);
+        border-radius: 20px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+    }
+    .profile-banner {
+        height: 150px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+    }
+    .profile-info-main {
+        padding: 0 2rem 2rem;
+        display: flex;
+        align-items: flex-end;
+        gap: 2rem;
+        margin-top: -50px;
+    }
+    .profile-image-container img {
+        width: 128px;
+        height: 128px;
+        border-radius: 50%;
+        border: 4px solid var(--card-bg);
+        object-fit: cover;
+        background: var(--bg-main);
+    }
+    .role-badge {
+        display: inline-block;
+        padding: 0.2rem 0.75rem;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .member-since {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    .profile-content-grid {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 2rem;
+    }
+    .profile-card {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+    }
+    .profile-form .form-group {
+        margin-bottom: 1.5rem;
+    }
+    .profile-form label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .profile-form input, .profile-form textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        background: var(--bg-main);
+        color: var(--text-main);
+        font-size: 0.95rem;
+    }
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    .stats-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+        .profile-content-grid {
+            grid-template-columns: 1fr;
+        }
+        .profile-info-main {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+    }
+</style>
+
+<script>
+    function updatePreview(url) {
+        if (url) {
+            document.getElementById('profile-preview').src = url;
+        }
+    }
+</script>
+{% endblock %}
