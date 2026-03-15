@@ -88,7 +88,7 @@
             {% for user in stats.top_users %}
             <div class="list-item">
                 <div class="user-avatar-small">
-                    <img src="https://ui-avatars.com/api/?name={{ user[0] }}&background=6366f1&color=fff" alt="">
+                    <img src="{{ url_for('static', filename='default_avatar.svg') }}" alt="User">
                 </div>
                 <div class="item-details">
                     <span class="item-name">{{ user[0] }}</span>

@@ -8,7 +8,7 @@
         <div class="profile-banner"></div>
         <div class="profile-info-main">
             <div class="profile-image-container">
-                <img src="{{ user[5] or 'https://ui-avatars.com/api/?name=' + user[0] + '&size=128' }}" alt="Profile Picture" id="profile-preview">
+                <img src="{{ user[5] or url_for('static', filename='default_avatar.svg') }}" alt="Profile Picture" id="profile-preview">
             </div>
             <div class="profile-text">
                 <h1>{{ user[0] }}</h1>

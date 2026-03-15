@@ -61,7 +61,7 @@
             <div class="sidebar-bottom">
                 {% if session.get('user_id') %}
                     <div class="user-info">
-                        <img src="{{ session.get('profile_pic') or 'https://ui-avatars.com/api/?name=' + session.get('name') }}" alt="User">
+                        <img src="{{ session.get('profile_pic') or url_for('static', filename='default_avatar.svg') }}" alt="User">
                         <div class="user-details">
                             <span class="user-name">{{ session.get('name') }}</span>
                             <span class="user-role">{{ session.get('role')|capitalize }}</span>
