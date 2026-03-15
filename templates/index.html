@@ -4,23 +4,21 @@
 
 {% block content %}
 {% if not session.get('user_id') %}
+<style>
+    .hero-section {
+        background: linear-gradient(rgba(79, 70, 229, 0.85), rgba(124, 58, 237, 0.85)), url('{{ url_for("static", filename="college_image.jpg") }}');
+        background-size: cover;
+        background-position: center;
+    }
+</style>
 <div class="hero-section animate-slide-in">
     <div class="hero-content">
-        <h1>Discover amazing college events.</h1>
-        <p>Join competitions, workshops, and seminars happening around you.</p>
+        <h1 style="font-size: 2.8rem; margin-bottom: 0.5rem;">Adhiyamaan College of Engineering</h1>
+        <h2 style="font-size: 1.6rem; font-weight: 500; margin-bottom: 1rem; opacity: 0.9;">Discover amazing events.</h2>
+        <p>Join competitions, workshops, and seminars happening at Adhiyamaan College.</p>
         <div class="hero-actions">
             <a href="/register" class="btn btn-primary">Get Started</a>
-            <a href="/login" class="btn btn-outline" style="color: white; border-color: white;">Login</a>
-        </div>
-    </div>
-    <div class="hero-stats">
-        <div class="hero-stat">
-            <span>50+</span>
-            <label>Live Events</label>
-        </div>
-        <div class="hero-stat">
-            <span>2000+</span>
-            <label>Students</label>
+            <a href="/login" class="btn btn-outline" style="color: white; border-color: white; background: rgba(255,255,255,0.1);">Login</a>
         </div>
     </div>
 </div>
@@ -97,7 +95,6 @@
 
 <style>
     .hero-section {
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
         border-radius: 24px;
         padding: 4rem;
         color: white;
@@ -107,12 +104,10 @@
         align-items: center;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
-    .hero-content h1 { font-size: 3rem; margin-bottom: 1.5rem; max-width: 500px; line-height: 1.1; }
-    .hero-content p { font-size: 1.25rem; opacity: 0.9; margin-bottom: 2rem; max-width: 450px; }
+    .hero-content h1 { line-height: 1.1; max-width: 600px; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .hero-content h2 { max-width: 500px; }
+    .hero-content p { font-size: 1.1rem; opacity: 0.9; margin-bottom: 2rem; max-width: 500px; }
     .hero-actions { display: flex; gap: 1rem; }
-    .hero-stats { display: flex; gap: 3rem; border-left: 1px solid rgba(255, 255, 255, 0.2); padding-left: 3rem; }
-    .hero-stat span { display: block; font-size: 2.5rem; font-weight: 800; }
-    .hero-stat label { opacity: 0.8; font-size: 0.9rem; }
 
     .filter-section {
         margin-bottom: 2rem;
@@ -156,8 +151,8 @@
     .empty-state i { font-size: 4rem; color: var(--text-muted); margin-bottom: 1.5rem; opacity: 0.3; }
     
     @media (max-width: 1024px) {
-        .hero-section { flex-direction: column; text-align: center; padding: 3rem 2rem; }
-        .hero-stats { border-left: none; padding-left: 0; margin-top: 3rem; border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 2rem; width: 100%; justify-content: center; }
+        .hero-section { flex-direction: column; text-align: center; padding: 3rem 2rem; justify-content: center; align-items: center; }
+        .hero-content { display: flex; flex-direction: column; align-items: center; }
     }
 </style>
 {% endblock %}
